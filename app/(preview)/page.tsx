@@ -22,6 +22,8 @@ import NextLink from "next/link";
 import { generateQuizTitle } from "./actions";
 import { AnimatePresence, motion } from "framer-motion";
 import { VercelIcon, GitIcon } from "@/components/icons";
+import { useRouter } from 'next/navigation';
+import { useQuizStore } from '../store/quizStore';
 
 export default function ChatWithFiles() {
   const [files, setFiles] = useState<File[]>([]);
@@ -30,6 +32,8 @@ export default function ChatWithFiles() {
   );
   const [isDragging, setIsDragging] = useState(false);
   const [title, setTitle] = useState<string>();
+  const router = useRouter();
+  const setQuestionsStore = useQuizStore((state) => state.setQuestions);
 
   const {
     submit,
@@ -44,7 +48,15 @@ export default function ChatWithFiles() {
       setFiles([]);
     },
     onFinish: ({ object }) => {
-      setQuestions(object ?? []);
+      console.log('Quiz generation finished:', object);
+      if (object && object.length === 4) {
+        console.log('Moving to flashcards page...');
+        setQuestionsStore(object);
+        
+        const quizId = Date.now().toString();
+        const title = 'finance-quiz-1';
+        router.push(`/${quizId}/${title}`);
+      }
     },
   });
 
@@ -92,6 +104,11 @@ export default function ChatWithFiles() {
     submit({ files: encodedFiles });
     const generatedTitle = await generateQuizTitle(encodedFiles[0].name);
     setTitle(generatedTitle);
+
+    if (questions.length > 0) {
+      setQuestionsStore(questions);
+      router.push('/flashcards');
+    }
   };
 
   const clearPDF = () => {
